@@ -1,49 +1,71 @@
-nginx:
-  #image: nginx:latest
-  build: ./nginx/
-  ports:
-    - 80:80
-  links:
-    - php
-  volumes_from:
-    - app
+version: "2.1"
 
-php:
-  build: ./php/
-  expose:
-    - 9000
-  links:
-    - mysql
-  volumes_from:
-    - app
-  
-app:
-  image: php:7.0-fpm
-  volumes:
-    - ./html:/var/www/html
-  command: "true"    
+services:
+  nginx:
+    #image: nginx:latest
+    build: ./nginx/
+    ports:
+      - 80:80
+    #links: 1.6.0
+    depends_on:
+      - php
+    volumes:
+      - "./html:/var/www/html:ro"
+    networks:
+      - server
 
-mysql:
-  image: mysql:latest
-  volumes_from:
-    - data
-  environment:
-    MYSQL_ROOT_PASSWORD: secret
-    MYSQL_DATABASE: project
-    MYSQL_USER: project
-    MYSQL_PASSWORD: project
+  php:
+    build: ./php/
+    expose:
+      - 9000
+    #links:
+    depends_on:
+      - mysql
+    env_file:
+      - ./.env
+    volumes:
+      - "./html:/var/www/html"
+    networks:
+      - database
+      - server
+    
+#  app:
+#    image: php:7.0-fpm
+#    volumes:
+#      - ./html:/var/www/html
+#    command: "true"    
 
-data:
-  image: mysql:latest
-  volumes:
-    - /var/lib/mysql
-  command: "true"
+  mysql:
+    image: mysql:latest
+    volumes:
+      - data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "secret"
+      MYSQL_DATABASE: "project"
+      MYSQL_USER: "project"
+      MYSQL_PASSWORD: "project"
+    networks:
+      - database
 
-phpmyadmin:
-  image: phpmyadmin/phpmyadmin
-  ports:
-    - 8080:80
-  links:
-    - mysql
-  environment:
-    PMA_HOST: mysql
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - 8080:80
+    #links:
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+    networks:
+      - database
+
+volumes:
+  data:
+#    image: mysql:latest
+#    volumes:
+#      - /var/lib/mysql
+#    command: "true"
+
+networks:
+  database:
+  server:
